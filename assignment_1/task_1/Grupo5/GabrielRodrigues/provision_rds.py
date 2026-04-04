@@ -24,7 +24,6 @@ def provision_rds():
             MasterUsername=DB_USER,
             MasterUserPassword=DB_PASSWORD,
             PubliclyAccessible=True, # Necessário para acessar do computador local
-            SkipFinalSnapshot=True
         )
 
         waiter = rds_client.get_waiter('db_instance_available')
