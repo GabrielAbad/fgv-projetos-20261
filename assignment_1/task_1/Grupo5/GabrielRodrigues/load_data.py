@@ -16,7 +16,8 @@ def load_data():
         connection = mysql.connector.connect(
             host=DB_HOST,
             user=DB_USER,
-            password=DB_PASSWORD
+            password=DB_PASSWORD,
+            use_pure=True,
         )
 
         if connection.is_connected():
@@ -27,8 +28,11 @@ def load_data():
 
             cursor = connection.cursor()
             print("Executando o script SQL (isso pode levar alguns segundos)...")
-            results = cursor.execute(sql_script, multi=True)
             
+            cursor.execute(sql_script)
+            while cursor.nextset():
+                pass
+
             connection.commit()
             print("Banco de dados 'classicmodels' criado e populado com sucesso!")
 
