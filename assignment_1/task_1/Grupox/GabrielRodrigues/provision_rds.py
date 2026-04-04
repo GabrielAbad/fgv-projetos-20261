@@ -8,8 +8,8 @@ import os
 
 DB_IDENTIFIER = 'classicmodels-db'
 AWS_REGION = 'us-east-1' 
-DB_USER = os.gentev('DB_USER')
-DB_PASSWORD = os.gentev('DB_PASSWORD')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 
 def provision_rds():
     rds_client = boto3.client('rds', region_name=AWS_REGION)

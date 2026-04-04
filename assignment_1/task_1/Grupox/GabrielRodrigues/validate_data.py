@@ -6,9 +6,9 @@ import sys
 import os
 
 
-DB_HOST = os.gentev('DB_HOST')
-DB_USER = os.gentev('DB_USER')
-DB_PASSWORD = os.gentev('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_NAME = 'classicmodels'
 
 def validate_data():
@@ -46,8 +46,9 @@ def validate_data():
     except Exception as e:
         print(f"Ocorreu um erro: {e}")
     finally:
-        if 'connection' in locals() and connection.is_connected():
+        if 'cursor' in locals():
             cursor.close()
+        if 'connection' in locals() and connection.is_connected():
             connection.close()
 
 if __name__ == "__main__":
