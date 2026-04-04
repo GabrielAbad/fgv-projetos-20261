@@ -4,11 +4,12 @@ load_dotenv()
 import mysql.connector
 import sys
 import os
+from pathlib import Path
 
 DB_HOST = os.getenv('DB_HOST')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
-SQL_FILE_PATH = 'mysqlsampledatabase.sql'
+SQL_FILE_PATH = Path(__file__).resolve().parent.parent.parent / 'data' / 'mysqlsampledatabase.sql'
 
 def load_data():
     try:
