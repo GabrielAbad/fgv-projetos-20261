@@ -5,9 +5,9 @@ import mysql.connector
 import sys
 import os
 
-DB_HOST = os.gentev('DB_HOST')
-DB_USER = os.gentev('DB_USER')
-DB_PASSWORD = os.gentev('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 SQL_FILE_PATH = 'mysqlsampledatabase.sql'
 
 def load_data():
@@ -36,8 +36,9 @@ def load_data():
         sys.exit(1)
 
     finally:
-        if 'connection' in locals() and connection.is_connected():
+        if 'cursor' in locals():
             cursor.close()
+        if 'connection' in locals() and connection.is_connected():
             connection.close()
 
 if __name__ == "__main__":
