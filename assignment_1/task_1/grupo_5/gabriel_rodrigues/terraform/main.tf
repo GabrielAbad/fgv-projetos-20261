@@ -56,7 +56,7 @@ resource "aws_vpc_security_group_ingress_rule" "mysql_from_sg" {
 }
 
 resource "aws_security_group" "glue_etl" {
-  name        = "${var.db_identifier}-glue-etl"
+  name_prefix = "${var.db_identifier}-glue-etl-"
   description = "Glue ETL security group (somente egress; usado para acesso ao RDS via regra referenciada)"
   vpc_id      = data.aws_db_subnet_group.this.vpc_id
 
@@ -66,6 +66,15 @@ resource "aws_security_group" "glue_etl" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "glue_self_tcp" {
+  security_group_id            = aws_security_group.glue_etl.id
+  description                  = "Glue VPC self TCP (workers)"
+  ip_protocol                  = "tcp"
+  from_port                    = 0
+  to_port                      = 65535
+  referenced_security_group_id = aws_security_group.glue_etl.id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "mysql_from_glue_sg" {
@@ -104,22 +113,24 @@ resource "aws_s3_object" "glue_script" {
 }
 
 resource "aws_glue_connection" "rds_mysql" {
-  name = "${var.project_name}-rds-mysql"
+  name            = "${var.project_name}-${var.db_identifier}-rds-mysql"
+  connection_type = "JDBC"
 
   connection_properties = {
     JDBC_CONNECTION_URL = "jdbc:mysql://${aws_db_instance.this.address}:${aws_db_instance.this.port}/classicmodels"
     USERNAME            = var.db_username
     PASSWORD            = var.db_password
+    JDBC_ENFORCE_SSL    = "false"
   }
 
   physical_connection_requirements {
-    subnet_id              = tolist(data.aws_db_subnet_group.this.subnet_ids)[0]
+    subnet_id              = coalesce(var.glue_subnet_id, tolist(data.aws_db_subnet_group.this.subnet_ids)[0])
     security_group_id_list = [aws_security_group.glue_etl.id]
   }
 }
 
 resource "aws_glue_job" "etl_star_schema" {
-  name     = "${var.project_name}-etl-star-schema"
+  name     = "${var.project_name}-${var.db_identifier}-etl-star-schema"
   role_arn = local.glue_role_arn
 
   glue_version      = "4.0"
@@ -146,7 +157,7 @@ resource "aws_glue_job" "etl_star_schema" {
 resource "aws_db_instance" "this" {
   identifier     = var.db_identifier
   engine         = "mysql"
-  engine_version = "8.0"
+  engine_version = "5.7"
   instance_class = "db.t3.micro"
 
   allocated_storage = 20

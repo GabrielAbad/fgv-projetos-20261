@@ -39,6 +39,12 @@ variable "glue_role_arn" {
   description = "ARN de uma IAM Role EXISTENTE que o AWS Glue possa assumir (no Learner Lab geralmente uma role como LabRole)."
 }
 
+variable "glue_subnet_id" {
+  type        = string
+  description = "Subnet ID para o Glue Connection (defina explicitamente no Learner Lab para evitar escolha errada)."
+  default     = null
+}
+
 # Quem pode conectar na porta 3306 (além dos security groups abaixo).
 variable "allowed_cidr_blocks" {
   type        = list(string)
