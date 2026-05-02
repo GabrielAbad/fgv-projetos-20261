@@ -28,11 +28,22 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "project_name" {
+  type        = string
+  description = "Prefixo amigável para nomear recursos da Task 2."
+  default     = "fgv-grupo5-gabriel"
+}
+
+variable "glue_role_arn" {
+  type        = string
+  description = "ARN de uma IAM Role EXISTENTE que o AWS Glue possa assumir (no Learner Lab geralmente uma role como LabRole)."
+}
+
 # Quem pode conectar na porta 3306 (além dos security groups abaixo).
 variable "allowed_cidr_blocks" {
   type        = list(string)
   description = "CIDRs com acesso MySQL. Para laboratório costuma-se IP/32; 0.0.0.0/0 abre para qualquer lugar."
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 # Security groups externos autorizados a conectar no MySQL deste RDS.
