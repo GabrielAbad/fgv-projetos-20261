@@ -14,12 +14,8 @@ resource "aws_s3_bucket" "etl_bucket" {
   bucket = "${var.project_name}-${random_id.suffix.hex}"
 }
 
-resource "aws_vpc_endpoint" "s3_gateway" {
-  vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = data.aws_route_tables.selected_vpc.ids
-}
+# The learner lab VPC usually already has an S3 gateway endpoint.
+# Creating another one fails with RouteAlreadyExists.
 
 resource "aws_s3_bucket_versioning" "etl_bucket_versioning" {
   bucket = aws_s3_bucket.etl_bucket.id
@@ -40,7 +36,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "etl_bucket_sse" {
 }
 
 resource "aws_security_group" "glue_job_sg" {
-  name        = "${var.project_name}-glue-sg"
+  name        = "${var.project_name}-glue-sg-${random_id.suffix.hex}"
   description = "Security group for Glue JDBC connection"
   vpc_id      = var.vpc_id
 }
@@ -90,7 +86,7 @@ resource "aws_s3_object" "glue_script" {
 }
 
 resource "aws_glue_connection" "mysql_connection" {
-  name = "${var.project_name}-mysql-connection"
+  name = "${var.project_name}-mysql-connection-${random_id.suffix.hex}"
 
   connection_properties = {
     JDBC_CONNECTION_URL = "jdbc:mysql://${var.db_host}:${var.db_port}/${var.db_name}"
@@ -106,7 +102,7 @@ resource "aws_glue_connection" "mysql_connection" {
 }
 
 resource "aws_glue_job" "etl_job" {
-  name     = "${var.project_name}-etl-job"
+  name     = "${var.project_name}-etl-job-${random_id.suffix.hex}"
   role_arn = var.glue_role_arn
 
   command {
@@ -131,5 +127,20 @@ resource "aws_glue_job" "etl_job" {
     "--db_user"                  = var.db_user
     "--db_password"              = var.db_password
     "--output_s3_path"           = "s3://${aws_s3_bucket.etl_bucket.id}/curated/"
+  }
+}
+
+resource "aws_glue_catalog_database" "analytics_db" {
+  name        = "${replace(var.project_name, "-", "_")}_analytics_${random_id.suffix.hex}"
+  description = "Analytical database for curated classicmodels data"
+}
+
+resource "aws_glue_crawler" "curated_crawler" {
+  name          = "${var.project_name}-crawler-${random_id.suffix.hex}"
+  database_name = aws_glue_catalog_database.analytics_db.name
+  role          = var.glue_role_arn
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.etl_bucket.id}/curated/"
   }
 }

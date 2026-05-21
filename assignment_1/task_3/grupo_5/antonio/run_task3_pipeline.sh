@@ -8,6 +8,7 @@ RDS_ENV_FILE="${SCRIPT_DIR}/.rds.generated.env"
 TERRAFORM_DIR="${SCRIPT_DIR}/terraform"
 TASK1_DIR="${REPO_ROOT}/assignment_1/task_1"
 TASK3_REQUIREMENTS="${SCRIPT_DIR}/requirements_task3.txt"
+RUN_CRAWLER="${RUN_CRAWLER:-true}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Missing .env file."
@@ -179,6 +180,8 @@ echo "Saving Terraform outputs..."
 terraform output -json > outputs.json
 
 GLUE_JOB_NAME="$(terraform output -raw glue_job_name)"
+GLUE_CRAWLER_NAME="$(terraform output -raw glue_crawler_name)"
+GLUE_CATALOG_DATABASE_NAME="$(terraform output -raw glue_catalog_database_name)"
 S3_BUCKET_NAME="$(terraform output -raw s3_bucket_name)"
 export GLUE_JOB_NAME
 
@@ -229,10 +232,22 @@ PY
   esac
 done
 
+RUN_CRAWLER_NORMALIZED="$(printf '%s' "${RUN_CRAWLER}" | tr '[:upper:]' '[:lower:]')"
+if [[ "${RUN_CRAWLER_NORMALIZED}" == "true" ]]; then
+  echo "Running Glue crawler: ${GLUE_CRAWLER_NAME}"
+  "${PYTHON_BIN}" "${SCRIPT_DIR}/scripts/run_glue_crawler.py" \
+    --crawler-name "${GLUE_CRAWLER_NAME}" \
+    --region "${AWS_REGION}"
+else
+  echo "Skipping Glue crawler execution (RUN_CRAWLER=${RUN_CRAWLER})."
+fi
+
 echo
 echo "Pipeline finished."
 echo "S3 bucket: ${S3_BUCKET_NAME}"
 echo "Curated path: s3://${S3_BUCKET_NAME}/curated/"
+echo "Glue catalog database: ${GLUE_CATALOG_DATABASE_NAME}"
+echo "Glue crawler: ${GLUE_CRAWLER_NAME}"
 echo
 echo "Next: open task3_dashboard.ipynb from this folder and run all cells."
 echo "It will read terraform/outputs.json automatically."
