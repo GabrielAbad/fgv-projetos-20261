@@ -15,13 +15,18 @@ source .venv/bin/activate
 assignment_1/task_3/grupo_5/antonio/run_task3_pipeline.sh
 ```
 
-What the unified pipeline now does:
-- Provisions/reuses RDS and loads `classicmodels` (task 1 approach).
-- Provisions Glue/S3 infra and runs Glue ETL job (task 3 from group 5).
-- Runs Glue Crawler to register curated tables in Glue Catalog/Athena (task 3 from group 1).
+What the pipeline does:
+- Provisions/reuses RDS and loads `classicmodels`.
+- Provisions Glue/S3 infrastructure with Terraform.
+- Runs Glue ETL job and waits for `SUCCEEDED`.
+- Runs Glue Crawler and waits for `SUCCEEDED`.
 
 Optional:
-- Set `RUN_CRAWLER=false` to skip crawler execution.
+- `RUN_CRAWLER=false` to skip crawler execution.
+- `LOAD_SOURCE_DATA=false` to skip MySQL reload step.
+- `AUTO_INSTALL_DEPS=false` to skip pip auto-install.
+- `GLUE_TIMEOUT_SECONDS=5400` to increase Glue wait timeout.
+- `CRAWLER_TIMEOUT_SECONDS=3600` to increase crawler wait timeout.
 
 After it finishes, register the Jupyter kernel and open the notebook:
 
@@ -33,4 +38,4 @@ jupyter lab
 
 Open `task3_dashboard.ipynb`, select kernel `FGV Task 3`, and run all cells.
 
-Local files that should not be committed are already ignored: `.env`, `.rds.generated.env`, `.venv/`, Terraform state, `terraform.tfvars`, and `terraform/outputs.json`.
+Local files that should not be committed are ignored by the repository `.gitignore`.

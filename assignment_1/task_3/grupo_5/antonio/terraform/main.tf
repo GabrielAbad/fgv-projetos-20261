@@ -2,16 +2,21 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+locals {
+  common_tags = {
+    Project   = var.project_name
+    ManagedBy = "terraform"
+    Task      = "task_3"
+  }
+}
+
 data "aws_subnet" "selected" {
   id = var.subnet_id
 }
 
-data "aws_route_tables" "selected_vpc" {
-  vpc_id = var.vpc_id
-}
-
 resource "aws_s3_bucket" "etl_bucket" {
   bucket = "${var.project_name}-${random_id.suffix.hex}"
+  tags   = local.common_tags
 }
 
 # The learner lab VPC usually already has an S3 gateway endpoint.
@@ -39,6 +44,7 @@ resource "aws_security_group" "glue_job_sg" {
   name        = "${var.project_name}-glue-sg-${random_id.suffix.hex}"
   description = "Security group for Glue JDBC connection"
   vpc_id      = var.vpc_id
+  tags        = local.common_tags
 }
 
 resource "aws_security_group_rule" "glue_egress_all" {
@@ -87,6 +93,7 @@ resource "aws_s3_object" "glue_script" {
 
 resource "aws_glue_connection" "mysql_connection" {
   name = "${var.project_name}-mysql-connection-${random_id.suffix.hex}"
+  tags = local.common_tags
 
   connection_properties = {
     JDBC_CONNECTION_URL = "jdbc:mysql://${var.db_host}:${var.db_port}/${var.db_name}"
@@ -104,6 +111,7 @@ resource "aws_glue_connection" "mysql_connection" {
 resource "aws_glue_job" "etl_job" {
   name     = "${var.project_name}-etl-job-${random_id.suffix.hex}"
   role_arn = var.glue_role_arn
+  tags     = local.common_tags
 
   command {
     script_location = "s3://${aws_s3_bucket.etl_bucket.id}/${aws_s3_object.glue_script.key}"
@@ -133,12 +141,14 @@ resource "aws_glue_job" "etl_job" {
 resource "aws_glue_catalog_database" "analytics_db" {
   name        = "${replace(var.project_name, "-", "_")}_analytics_${random_id.suffix.hex}"
   description = "Analytical database for curated classicmodels data"
+  tags        = local.common_tags
 }
 
 resource "aws_glue_crawler" "curated_crawler" {
   name          = "${var.project_name}-crawler-${random_id.suffix.hex}"
   database_name = aws_glue_catalog_database.analytics_db.name
   role          = var.glue_role_arn
+  tags          = local.common_tags
 
   s3_target {
     path = "s3://${aws_s3_bucket.etl_bucket.id}/curated/"

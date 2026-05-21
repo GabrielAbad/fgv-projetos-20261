@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Project prefix for resource naming"
   type        = string
-  default     = "grupo5-task2"
+  default     = "grupo5-task3"
 }
 
 variable "db_host" {

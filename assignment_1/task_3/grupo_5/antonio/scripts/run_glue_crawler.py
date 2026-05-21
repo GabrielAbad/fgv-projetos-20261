@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 import time
 
@@ -21,18 +22,28 @@ def parse_args() -> argparse.Namespace:
         default=20,
         help="Seconds between crawler status checks",
     )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=1800,
+        help="Maximum seconds to wait for crawler completion",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     glue = boto3.client("glue", region_name=args.region)
+    start_time = time.monotonic()
 
     try:
         state = glue.get_crawler(Name=args.crawler_name)["Crawler"]["State"]
         if state != "READY":
             print(f"[crawler] Current state is {state}; waiting for READY before start.")
             while state != "READY":
+                if time.monotonic() - start_time > args.timeout_seconds:
+                    print("[crawler] Timeout waiting for crawler to become READY.", file=sys.stderr)
+                    return 1
                 time.sleep(args.poll_interval)
                 state = glue.get_crawler(Name=args.crawler_name)["Crawler"]["State"]
 
@@ -46,17 +57,24 @@ def main() -> int:
             print(f"[crawler] Failed to start crawler: {exc}", file=sys.stderr)
             return 1
 
+    max_polls = max(1, math.ceil(args.timeout_seconds / max(1, args.poll_interval)))
+    polls = 0
     while True:
+        polls += 1
+        if polls > max_polls:
+            print("[crawler] Timeout waiting for crawler completion.", file=sys.stderr)
+            return 1
+
         crawler = glue.get_crawler(Name=args.crawler_name)["Crawler"]
         state = crawler.get("State", "UNKNOWN")
         last_status = crawler.get("LastCrawl", {}).get("Status", "UNKNOWN")
         print(f"[crawler] state={state} last_status={last_status}")
 
         if state == "READY":
-            if last_status in {"SUCCEEDED", "CANCELLED"}:
+            if last_status in {"SUCCEEDED"}:
                 print("[crawler] Crawler finished successfully.")
                 return 0
-            if last_status in {"FAILED"}:
+            if last_status in {"FAILED", "CANCELLED"}:
                 print("[crawler] Crawler failed.", file=sys.stderr)
                 return 1
         time.sleep(args.poll_interval)
