@@ -3,7 +3,7 @@
 From the repository root:
 
 ```bash
-cp assignment_1/task_3/grupo_5/antonio/.env.example assignment_1/task_3/grupo_5/antonio/.env
+cp assignment_1/task_3/grupo_5/gabriel/.env.example assignment_1/task_3/grupo_5/gabriel/.env
 ```
 
 Fill `.env` with your AWS Academy credentials and `DB_PASSWORD`.
@@ -12,7 +12,7 @@ Activate your repo virtual environment and run the pipeline:
 
 ```bash
 source .venv/bin/activate
-assignment_1/task_3/grupo_5/antonio/run_task3_pipeline.sh
+assignment_1/task_3/grupo_5/gabriel/run_task3_pipeline.sh
 ```
 
 What the pipeline does:
@@ -32,7 +32,7 @@ After it finishes, register the Jupyter kernel and open the notebook:
 
 ```bash
 python -m ipykernel install --user --name fgv-task3 --display-name "FGV Task 3"
-cd assignment_1/task_3/grupo_5/antonio
+cd assignment_1/task_3/grupo_5/gabriel
 jupyter lab
 ```
 

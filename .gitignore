@@ -7,8 +7,8 @@ __pycache__/
 venv/
 
 # Task 3 local secrets and generated envs
-assignment_1/task_3/grupo_5/antonio/.env
-assignment_1/task_3/grupo_5/antonio/.rds.generated.env
+assignment_1/task_3/grupo_5/gabriel/.env
+assignment_1/task_3/grupo_5/gabriel/.rds.generated.env
 
 # Terraform local artifacts
 **/.terraform/
