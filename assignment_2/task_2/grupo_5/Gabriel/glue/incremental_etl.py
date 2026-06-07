@@ -171,40 +171,54 @@ try:
         )
     )
 
-    # ---------- dim_countries ----------
+    customers_for_countries = customers.select(
+        F.col("salesRepEmployeeNumber"),
+        F.col("country").alias("customer_country"),
+    )
+    employees_slim = employees.select("employeeNumber", "officeCode")
+    offices_slim = offices.select("officeCode", "territory")
+
     dim_countries = (
-        customers.join(
-            employees.join(offices, "officeCode", "left"),
-            customers["salesRepEmployeeNumber"] == employees["employeeNumber"],
+        customers_for_countries
+        .join(
+            employees_slim.join(offices_slim, "officeCode", "left"),
+            customers_for_countries["salesRepEmployeeNumber"] == employees_slim["employeeNumber"],
             "left",
         )
         .select(
-            F.col("customers.country").alias("country"),
-            F.col("offices.territory").alias("territory"),
+            F.col("customer_country").alias("country"),
+            F.col("territory"),
         )
         .distinct()
         .withColumn("country_key", F.md5(F.col("country")))
     )
 
     # ---------- dim_dates (derived from delta orders) ----------
-    dates_df = orders_delta.select(
-        F.col("orderDate").alias("full_date")
-    ).distinct()
-
-    dim_dates = dates_df.select(
-        F.date_format(F.col("full_date"), "yyyyMMdd").alias("date_key"),
-        F.col("full_date"),
-        F.year(F.col("full_date")).alias("year"),
-        F.quarter(F.col("full_date")).alias("quarter"),
-        F.month(F.col("full_date")).alias("month"),
-        F.dayofmonth(F.col("full_date")).alias("day"),
+    dim_dates = (
+        orders_delta.select(F.col("orderDate").alias("full_date")).distinct()
+        .select(
+            F.date_format(F.col("full_date"), "yyyyMMdd").alias("date_key"),
+            F.col("full_date"),
+            F.year(F.col("full_date")).alias("year"),
+            F.quarter(F.col("full_date")).alias("quarter"),
+            F.month(F.col("full_date")).alias("month"),
+            F.dayofmonth(F.col("full_date")).alias("day"),
+        )
     )
 
     # ---------- fact_orders (delta) ----------
+    cust_lookup = dim_customers.select(
+        F.col("customer_id"),
+        F.col("country").alias("cust_country"),
+    )
+    country_lookup = dim_countries.select("country", "country_key")
+
+    orders_with_details = orders_delta.join(orderdetails, "orderNumber", "inner")
+
     fact_delta = (
-        orders_delta.join(orderdetails, "orderNumber", "inner")
-        .join(dim_customers.select("customer_id", "country"), orders_delta["customerNumber"] == dim_customers["customer_id"], "left")
-        .join(dim_countries.select("country", "country_key"), "country", "left")
+        orders_with_details
+        .join(cust_lookup, orders_with_details["customerNumber"] == cust_lookup["customer_id"], "left")
+        .join(country_lookup, country_lookup["country"] == cust_lookup["cust_country"], "left")
         .select(
             F.col("orderNumber").alias("order_id"),
             F.col("customerNumber").alias("customer_id"),
